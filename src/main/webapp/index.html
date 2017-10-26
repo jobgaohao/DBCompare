@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to DBCompare</title>
+    <script type="text/javascript" src="static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="static/js/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="static/js/datagrid-detailview.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/css/reset.css">
+    <link rel="stylesheet" type="text/css" href="static/css/demo.css">
+    <link rel="stylesheet" type="text/css" href="static/css/easyui.css">
+    <link rel="stylesheet" type="text/css" href="static/css/icon.css">
+    <style type="text/css">
+    ul {
+        display:inline-block;
+        margin: 5px 20px;
+    }    
+    li {
+        margin: 0 20px;
+        display:inline-block;
+        vertical-align: middle;
+    }
+    li label {
+    	display:inline-block;
+    	width: 70px;
+    }
+    li input {
+    	display:inline-block;
+    	width: 230px;
+    } 
+    li label,li input {
+    	vertical-align: middle;
+    }
+    </style>
+</head>
+
+<body class="easyui-layout">
+    <div data-options="region:'north',title:'连接配置',split:true" style="height:160px;">
+        <form id="ff" method="post">
+            <ul>
+                <li>
+                    <p>
+                        <label for="connNameLeft">连接名(左)<font color="red">*</font></label>
+                        <input type="text" name="connNameLeft" id="connNameLeft" />
+                    </p>
+                    <p>
+                        <label for="urlLeft">连接URL<font color="red">*</font></label>
+                        <input type="text" name="urlLeft" id="urlLeft" />
+                    </p>                 
+                    <p>
+                        <label for="usernameLeft">用户名<font color="red">*</font></label>
+                        <input type="text" name="usernameLeft" id="usernameLeft" />
+                    </p>
+                    <p>
+                        <label for="passwordLeft">密码<font color="red">*</font></label>
+                        <input type="password" name="passwordLeft" id="passwordLeft" />
+                    </p>
+                    <p>
+                        <label for="tableNameLeft">表名</label>
+                        <input type="text" name="tableNameLeft" id="tableNameLeft" placeholder="默认所有，多个以逗号分隔"/>
+                    </p>                    
+                </li>
+                <li>
+                	<p>
+            			<a id="compareButton" href="#" class="easyui-linkbutton">开始比较</a>
+                	</p>
+                </li>
+                <li>
+                    <p>
+                        <label for="connNameRight">连接名(右)<font color="red">*</font></label>
+                        <input type="text" name="connNameRight" id="connNameRight" />
+                    </p>
+                    <p>
+                        <label for="urlRight">连接URL<font color="red">*</font></label>
+                        <input type="text" name="urlRight" id="urlRight" />
+                    </p>                 
+                    <p>
+                        <label for="usernameRight">用户名<font color="red">*</font></label>
+                        <input type="text" name="usernameRight" id="usernameRight" />
+                    </p>
+                    <p>
+                        <label for="passwordRight">密码<font color="red">*</font></label>
+                        <input type="password" name="passwordRight" id="passwordRight" />
+                    </p>
+                    <p>
+                        <label for="tableNameRight">表名</label>
+                        <input type="text" name="tableNameRight" id="tableNameRight" placeholder="默认所有，多个以逗号分隔" />
+                    </p>                    
+                </li>
+            </ul>
+        </form>
+    </div>
+    <div data-options="region:'center',title:'表结构差异'" style="padding:5px;background:#eee;">
+        
+        <table id="compareResult"></table>
+
+    </div>
+
+    <script type="text/javascript">
+    $(function() {
+        //数据表格初始化
+        $('#compareResult').datagrid({
+            url:'./compare',
+            loadMsg: "数据装载中....",
+            pagination:true,
+            autoRowHeight:false,
+            striped:true,
+            rownumbers:true,
+            pageList : [20, 50, 100],
+            pageSize : 100,
+            columns:[[
+                {field:'connNameLeft',title:'连接名(左)',width:100,align:'left'}, 
+                {field:'tableNameLeft',title:'表名(左)',width:250,align:'left'},                
+                {field:'columnName',title:'列名',width:300,align:'center'},
+                {field:'connNameRight',title:'连接名(右)',width:100,align:'left'},
+                {field:'tableNameRight',title:'表名(右)',width:250,align:'left'}
+            ]],
+        	view: detailview,
+        	detailFormatter:function(index,row){
+        		return '<div style="padding:2px"><table class="ddv"></table></div>';
+        	},
+        	onExpandRow: function(index,row){
+        		var ddv = $(this).datagrid('getRowDetail',index).find('table.ddv');
+        		ddv.datagrid({
+        			url:'#',
+        			data:row.diffColumnlist,
+        			fitColumns:true,
+        			singleSelect:true,
+        			rownumbers:true,
+        			loadMsg:'',
+        			height:'auto',
+        			columns:[[
+               			{field:'connName',title:'CONN_NAME',width:200,formatter: function(value,sub_row,sub_index){
+           					if(sub_index == 0){
+           						return row.connNameLeft;
+           					}else if(sub_index == 1){
+           						return row.connNameRight;
+           					}
+           				}},
+        				{field:'columnName',title:'COLUMN_NAME',width:200},
+        				{field:'dataType',title:'DATA_TYPE',width:140},
+        				{field:'dataLength',title:'DATA_LENGTH',width:100},
+        				{field:'nullable',title:'NULLABLE',width:100},
+        				{field:'dataDefault',title:'DATA_DEFAULT',width:140},
+        				{field:'dataPrecision',title:'DATA_PRECISION',width:100},
+        				{field:'dataScale',title:'DATA_SCALE',width:100},
+        			]],
+        			onResize:function(){
+        				$('#compareResult').datagrid('fixDetailRowHeight',index);
+        			},
+        			onLoadSuccess:function(){
+        				setTimeout(function(){
+        					$('#compareResult').datagrid('fixDetailRowHeight',index);
+        				},0);
+        			}
+        		});
+        		$('#compareResult').datagrid('fixDetailRowHeight',index);
+        	}            
+        });
+        
+    	//初始化分页工具栏
+    	var pg = $('#compareResult').datagrid('getPager');
+    	$(pg).pagination({
+    		beforePageText : '第',// 页数文本框前显示的汉字
+    		afterPageText : '页    共 {pages} 页',
+    		displayMsg : '当前显示  {from}  - {to} 条记录   共 {total} 条记录'
+    	});
+    	
+        //比较按钮事件初始化
+        $('#compareButton').click(function() {
+        	
+            $('#compareResult').datagrid('reload',{
+                'connNameLeft' : $('#connNameLeft').val(),
+                'urlLeft' : $('#urlLeft').val(),
+                'usernameLeft' : $('#usernameLeft').val(),
+                'passwordLeft' : $('#passwordLeft').val(),
+                'tableNameListLeft' : $('#tableNameLeft').val(),
+                'connNameRight' : $('#connNameRight').val(),
+                'urlRight' : $('#urlRight').val(),
+                'usernameRight' : $('#usernameRight').val(),
+                'passwordRight' : $('#passwordRight').val(),
+                'tableNameListRight' : $('#tableNameRight').val()             	
+            });
+
+        });
+    });
+    </script>
+</body>
+
+</html>

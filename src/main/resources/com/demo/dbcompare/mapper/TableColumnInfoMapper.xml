@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dbcompare.mapper.TableColumnInfoMapper">
+	<resultMap id="BaseResultMap" type="com.demo.dbcompare.model.TableColumnInfo">
+		<result column="TABLE_NAME" jdbcType="VARCHAR" property="tableName" />
+		<result column="COLUMN_NAME" jdbcType="VARCHAR" property="columnName" />
+		<result column="DATA_TYPE" jdbcType="VARCHAR" property="dataType" />
+		<result column="DATA_LENGTH" jdbcType="VARCHAR" property="dataLength" />
+		<result column="DATA_SCALE" jdbcType="VARCHAR" property="dataScale" />
+		<result column="DATA_PRECISION" jdbcType="VARCHAR" property="dataPrecision" />
+		<result column="NULLABLE" jdbcType="VARCHAR" property="nullable" />
+		<result column="DATA_DEFAULT" jdbcType="LONGVARCHAR" property="dataDefault" javaType="string" typeHandler="org.apache.ibatis.type.StringTypeHandler"/>
+	</resultMap>
+	
+	<select id="findByTableNameList" databaseId="MySQL" resultType="com.demo.dbcompare.model.TableColumnInfo">
+		select 
+		TABLE_NAME AS tableName,
+		COLUMN_NAME AS columnName,
+		DATA_TYPE AS dataType,
+		CHARACTER_MAXIMUM_LENGTH AS dataLength,
+		NUMERIC_PRECISION AS dataPrecision,
+		NUMERIC_SCALE AS dataScale,
+		IS_NULLABLE AS nullable,
+		COLUMN_DEFAULT AS dataDefault		
+		from `information_schema`.`COLUMNS`
+		where UPPER(TABLE_SCHEMA) = #{dbName}
+		and UPPER(TABLE_NAME) IN 
+		<foreach collection="list" item="tableName" open="(" close=")" separator=",">
+			#{tableName}
+		</foreach>
+		order by TABLE_NAME ASC,COLUMN_NAME ASC
+	</select>
+	
+	<select id="findTables" parameterType="string" databaseId="MySQL" resultType="string">
+		select distinct TABLE_NAME		
+		from `information_schema`.`COLUMNS`
+		where UPPER(TABLE_SCHEMA) = #{dbName}
+	</select>
+	
+	<select id="findByTableNameList" parameterType="string" databaseId="Oracle" resultMap="BaseResultMap">
+		select 
+		TABLE_NAME,
+		COLUMN_NAME,
+		DATA_TYPE,
+		DATA_LENGTH,
+		DATA_PRECISION,
+		DATA_SCALE,
+		NULLABLE,
+		DATA_DEFAULT		
+		from USER_TAB_COLUMNS
+		where TABLE_NAME IN 
+		<foreach collection="list" item="tableName" open="(" close=")" separator=",">
+			#{tableName}
+		</foreach>
+		order by TABLE_NAME ASC,COLUMN_NAME ASC
+	</select>
+	<select id="findTables" parameterType="string" databaseId="Oracle" resultType="string">
+		select TABLE_NAME		
+		from USER_TABLES
+	</select>	
+</mapper>
